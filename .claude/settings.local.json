@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"E:\\\\eurovision\" -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "PowerShell(Get-ChildItem -Path \"E:\\\\eurovision\" -Force | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"E:\\\\eurovision\\\\.claude\" -Force -Recurse | ForEach-Object { $_.FullName })",
+      "WebSearch",
+      "WebFetch(domain:eurovisionworld.com)",
+      "WebFetch(domain:mybettingsites.co.uk)",
+      "WebFetch(domain:uk.news.yahoo.com)",
+      "WebFetch(domain:www.youtube.com)",
+      "WebFetch(domain:eurovoix.com)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "Bash(npx create-expo-app@latest *)",
+      "Bash(npm install *)",
+      "Bash(node *)",
+      "Bash(npx expo *)",
+      "Bash(Remove-Item -Recurse -Force \"E:\\\\eurovision\\\\app\")",
+      "Bash(Remove-Item -Recurse -Force \"E:\\\\eurovision\\\\src\\\\app\")",
+      "Bash(pkill -f \"expo start\")",
+      "Bash(pkill -f \"ngrok\")",
+      "Bash(taskkill /F /IM node.exe /T)",
+      "Bash(powershell.exe *)",
+      "Bash(npm uninstall *)"
+    ]
+  }
+}

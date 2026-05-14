@@ -1,0 +1,19 @@
+import { Song } from './semifinal1';
+import { semifinal1Songs } from './semifinal1';
+import { semifinal2Songs } from './semifinal2';
+
+export interface Semifinal {
+  id: string;
+  label: string;
+  date: string;
+  songs: Song[];
+}
+
+export const semifinals: Semifinal[] = [
+  { id: 'sf1', label: 'Deltävling 1', date: '13 maj 2026', songs: semifinal1Songs },
+  { id: 'sf2', label: 'Deltävling 2', date: '14 maj 2026', songs: semifinal2Songs },
+];
+
+export function getSemifinal(id: string): Semifinal | undefined {
+  return semifinals.find(s => s.id === id);
+}
