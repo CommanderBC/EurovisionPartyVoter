@@ -1,12 +1,4 @@
-export interface Song {
-  id: string;
-  position: number;
-  country: string;
-  flag: string;
-  artist: string;
-  title: string;
-  youtubeId: string;
-}
+import { Song } from './semifinals';
 
 export const semifinal1Songs: Song[] = [
   { id: 'moldova',    position: 1,  country: 'Moldavien',  flag: '🇲🇩', artist: 'Satoshi',                         title: 'Viva, Moldova!',      youtubeId: 'SViojHjNSzc' },

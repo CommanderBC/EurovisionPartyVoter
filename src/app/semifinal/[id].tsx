@@ -3,11 +3,9 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { getSemifinal } from '../../data/semifinals';
 import { SongCard } from '../../components/SongCard';
-import { useUser } from '../../hooks/useUser';
 
 export default function SemifinalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { username } = useUser();
   const router = useRouter();
   const semi = getSemifinal(id);
 
@@ -37,7 +35,7 @@ export default function SemifinalScreen() {
       <FlatList
         data={semi.songs}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <SongCard song={item} semifinalId={id} username={username} />}
+        renderItem={({ item }) => <SongCard song={item} semifinalId={id} />}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <View style={styles.header}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import {
   View,
@@ -11,13 +11,77 @@ import {
   Modal,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useUser } from '../hooks/useUser';
+import { UserProvider, useUser } from '../hooks/useUser';
 
-export default function RootLayout() {
-  const { username, setUsername, isLoading } = useUser();
+function NameModal() {
+  const { username, isEditing, isLoading, setUsername, cancelEditing } = useUser();
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState('');
 
+  const visible = !isLoading && (!username || isEditing);
+  const isFirstTime = !username;
+
+  useEffect(() => {
+    if (visible) {
+      setInputValue(username ?? '');
+      setError('');
+    }
+  }, [visible, username]);
+
+  async function handleSave() {
+    const trimmed = inputValue.trim();
+    if (!trimmed) {
+      setError('Ange ett namn');
+      return;
+    }
+    await setUsername(trimmed);
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={cancelEditing}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalBg}
+      >
+        <View style={styles.modal}>
+          <Text style={styles.modalEmoji}>🎶</Text>
+          <Text style={styles.modalTitle}>Eurovision 2026</Text>
+          <Text style={styles.modalSubtitle}>
+            {isFirstTime ? 'Vad heter du?' : 'Byt namn'}
+          </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ange ditt smeknamn"
+            placeholderTextColor="#555"
+            value={inputValue}
+            onChangeText={(t) => {
+              setInputValue(t);
+              setError('');
+            }}
+            maxLength={20}
+            returnKeyType="done"
+            onSubmitEditing={handleSave}
+            autoFocus
+          />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
+            <Text style={styles.saveBtnText}>
+              {isFirstTime ? 'Börja betygsätta →' : 'Spara'}
+            </Text>
+          </TouchableOpacity>
+          {!isFirstTime && (
+            <TouchableOpacity style={styles.cancelBtn} onPress={cancelEditing} activeOpacity={0.8}>
+              <Text style={styles.cancelBtnText}>Avbryt</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+function LoadingGate({ children }: { children: React.ReactNode }) {
+  const { isLoading } = useUser();
   if (isLoading) {
     return (
       <View style={styles.loading}>
@@ -25,58 +89,25 @@ export default function RootLayout() {
       </View>
     );
   }
+  return <>{children}</>;
+}
 
-  function handleSave() {
-    const trimmed = inputValue.trim();
-    if (!trimmed) {
-      setError('Ange ett namn');
-      return;
-    }
-    setUsername(trimmed);
-  }
-
+export default function RootLayout() {
   return (
-    <>
+    <UserProvider>
       <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: '#1a0a2e' },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: '700' },
-          contentStyle: { backgroundColor: '#0d0620' },
-        }}
-      />
-      <Modal visible={!username} transparent animationType="fade">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalBg}
-        >
-          <View style={styles.modal}>
-            <Text style={styles.modalEmoji}>🎶</Text>
-            <Text style={styles.modalTitle}>Eurovision 2026</Text>
-            <Text style={styles.modalSubtitle}>Vad heter du?</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ange ditt smeknamn"
-              placeholderTextColor="#555"
-              value={inputValue}
-              onChangeText={(t) => {
-                setInputValue(t);
-                setError('');
-              }}
-              maxLength={20}
-              returnKeyType="done"
-              onSubmitEditing={handleSave}
-              autoFocus
-            />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
-              <Text style={styles.saveBtnText}>Börja betygsätta →</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    </>
+      <LoadingGate>
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: '#1a0a2e' },
+            headerTintColor: '#fff',
+            headerTitleStyle: { fontWeight: '700' },
+            contentStyle: { backgroundColor: '#0d0620' },
+          }}
+        />
+        <NameModal />
+      </LoadingGate>
+    </UserProvider>
   );
 }
 
@@ -151,5 +182,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  cancelBtn: {
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  cancelBtnText: {
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

@@ -1,25 +1,26 @@
 import { useState, useEffect } from 'react';
-import { RatingsMap, subscribeToRatings, setRating as firestoreSetRating } from '../firebase/ratings';
+import { Vote, subscribeToSongVotes, setRating as firestoreSetRating } from '../firebase/ratings';
+import { useUser } from './useUser';
 
-export function useRatings(semifinalId: string, songId: string, username: string | null) {
-  const [ratings, setRatings] = useState<RatingsMap>({});
+export function useRatings(semifinalId: string, songId: string) {
+  const { userId, username } = useUser();
+  const [votes, setVotes] = useState<Vote[]>([]);
 
   useEffect(() => {
-    const unsub = subscribeToRatings(semifinalId, songId, setRatings);
-    return unsub;
+    return subscribeToSongVotes(semifinalId, songId, setVotes);
   }, [semifinalId, songId]);
 
-  const myRating = username ? (ratings[username] ?? null) : null;
+  const myRating = userId ? (votes.find(v => v.userId === userId)?.score ?? null) : null;
 
   const average =
-    Object.keys(ratings).length > 0
-      ? Object.values(ratings).reduce((sum, v) => sum + v, 0) / Object.values(ratings).length
+    votes.length > 0
+      ? votes.reduce((sum, v) => sum + v.score, 0) / votes.length
       : null;
 
   async function setRating(score: number) {
-    if (!username) return;
-    await firestoreSetRating(semifinalId, songId, username, score);
+    if (!userId || !username) return;
+    await firestoreSetRating(semifinalId, songId, userId, username, score);
   }
 
-  return { ratings, myRating, average, setRating };
+  return { votes, myRating, average, setRating };
 }

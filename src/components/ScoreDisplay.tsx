@@ -1,16 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { RatingsMap } from '../firebase/ratings';
+import { Vote } from '../firebase/ratings';
 
 interface Props {
-  ratings: RatingsMap;
+  votes: Vote[];
   average: number | null;
 }
 
-export function ScoreDisplay({ ratings, average }: Props) {
-  const entries = Object.entries(ratings);
-
-  if (entries.length === 0) {
+export function ScoreDisplay({ votes, average }: Props) {
+  if (votes.length === 0) {
     return (
       <View style={styles.container}>
         <Text style={styles.empty}>Ingen har betygsatt än</Text>
@@ -24,10 +22,10 @@ export function ScoreDisplay({ ratings, average }: Props) {
         <Text style={styles.average}>⭐ {average.toFixed(1)}</Text>
       )}
       <View style={styles.grid}>
-        {entries.map(([name, score]) => (
-          <View key={name} style={styles.entry}>
-            <Text style={styles.name} numberOfLines={1}>{name}</Text>
-            <Text style={styles.score}>{score}</Text>
+        {votes.map((v) => (
+          <View key={v.userId} style={styles.entry}>
+            <Text style={styles.name} numberOfLines={1}>{v.name}</Text>
+            <Text style={styles.score}>{v.score}</Text>
           </View>
         ))}
       </View>

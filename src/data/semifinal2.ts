@@ -1,4 +1,4 @@
-import { Song } from './semifinal1';
+import { Song } from './semifinals';
 
 export const semifinal2Songs: Song[] = [
   { id: 'bulgaria',    position: 1,  country: 'Bulgarien',  flag: '🇧🇬', artist: 'DARA',                      title: 'Bangaranga',        youtubeId: 'J3oGYo_mekw' },

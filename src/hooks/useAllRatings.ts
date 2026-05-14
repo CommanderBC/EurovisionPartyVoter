@@ -1,34 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Song } from '../data/semifinal1';
-import { RatingsMap, subscribeToRatings } from '../firebase/ratings';
+import { Song } from '../data/semifinals';
+import { SemifinalVotes, Vote, subscribeToSemifinalVotes } from '../firebase/ratings';
 
 export interface RankedSong {
   song: Song;
-  ratings: RatingsMap;
+  votes: Vote[];
   average: number | null;
   voteCount: number;
 }
 
 export function useAllRatings(semifinalId: string, songs: Song[]): RankedSong[] {
-  const [ratingsMap, setRatingsMap] = useState<Record<string, RatingsMap>>({});
+  const [allVotes, setAllVotes] = useState<SemifinalVotes>({});
 
   useEffect(() => {
-    const unsubs = songs.map(song =>
-      subscribeToRatings(semifinalId, song.id, (ratings) => {
-        setRatingsMap(prev => ({ ...prev, [song.id]: ratings }));
-      })
-    );
-    return () => unsubs.forEach(u => u());
+    return subscribeToSemifinalVotes(semifinalId, setAllVotes);
   }, [semifinalId]);
 
   return songs
     .map(song => {
-      const ratings = ratingsMap[song.id] ?? {};
-      const values = Object.values(ratings);
-      const average = values.length > 0
-        ? values.reduce((a, b) => a + b, 0) / values.length
+      const votes = allVotes[song.id] ?? [];
+      const average = votes.length > 0
+        ? votes.reduce((a, v) => a + v.score, 0) / votes.length
         : null;
-      return { song, ratings, average, voteCount: values.length };
+      return { song, votes, average, voteCount: votes.length };
     })
     .sort((a, b) => {
       if (a.average === null && b.average === null) return a.song.position - b.song.position;

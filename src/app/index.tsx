@@ -6,14 +6,21 @@ import { semifinals } from '../data/semifinals';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { username } = useUser();
+  const { username, startEditing } = useUser();
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
           <Text style={styles.title}>🎤 Eurovision 2026</Text>
-          {username && <Text style={styles.welcome}>Hej, {username}!</Text>}
+          {username && (
+            <View style={styles.welcomeRow}>
+              <Text style={styles.welcome}>Hej, {username}!</Text>
+              <TouchableOpacity onPress={startEditing} hitSlop={8}>
+                <Text style={styles.editName}>Byt namn</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {semifinals.map(semi => (
@@ -64,10 +71,21 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
   },
+  welcomeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
   welcome: {
     color: '#b39ddb',
     fontSize: 15,
-    marginTop: 4,
+  },
+  editName: {
+    color: '#e040fb',
+    fontSize: 13,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   section: {
     marginBottom: 20,

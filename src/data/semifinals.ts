@@ -1,6 +1,15 @@
-import { Song } from './semifinal1';
 import { semifinal1Songs } from './semifinal1';
 import { semifinal2Songs } from './semifinal2';
+
+export interface Song {
+  id: string;
+  position: number;
+  country: string;
+  flag: string;
+  artist: string;
+  title: string;
+  youtubeId: string;
+}
 
 export interface Semifinal {
   id: string;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { Image } from 'expo-image';
-import { Song } from '../data/semifinal1';
+import { Song } from '../data/semifinals';
 import { RatingButtons } from './RatingButtons';
 import { ScoreDisplay } from './ScoreDisplay';
 import { useRatings } from '../hooks/useRatings';
@@ -9,11 +9,10 @@ import { useRatings } from '../hooks/useRatings';
 interface Props {
   song: Song;
   semifinalId: string;
-  username: string | null;
 }
 
-export function SongCard({ song, semifinalId, username }: Props) {
-  const { ratings, myRating, average, setRating } = useRatings(semifinalId, song.id, username);
+export function SongCard({ song, semifinalId }: Props) {
+  const { votes, myRating, average, setRating } = useRatings(semifinalId, song.id);
 
   const thumbnailUrl = `https://img.youtube.com/vi/${song.youtubeId}/mqdefault.jpg`;
   const youtubeUrl = `https://www.youtube.com/watch?v=${song.youtubeId}`;
@@ -48,7 +47,7 @@ export function SongCard({ song, semifinalId, username }: Props) {
 
       <View style={styles.ratingSection}>
         <RatingButtons value={myRating} onChange={setRating} />
-        <ScoreDisplay ratings={ratings} average={average} />
+        <ScoreDisplay votes={votes} average={average} />
       </View>
     </View>
   );
