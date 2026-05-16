@@ -17,16 +17,21 @@ export interface Vote {
 
 export type SemifinalVotes = Record<string, Vote[]>;
 
-interface StoredEntry {
+interface StoredVote {
   score: number;
   name: string;
 }
 
-type StoredDoc = Record<string, StoredEntry | number>;
+interface LegacyEntry {
+  score: number;
+  name: string;
+}
+
+type LegacyDoc = Record<string, LegacyEntry | number>;
 
 const UPPER_SENTINEL = String.fromCharCode(0xf8ff);
 
-function normalize(data: StoredDoc | undefined): Vote[] {
+function normalizeLegacy(data: LegacyDoc | undefined): Vote[] {
   if (!data) return [];
   const votes: Vote[] = [];
   for (const [key, value] of Object.entries(data)) {
@@ -39,9 +44,19 @@ function normalize(data: StoredDoc | undefined): Vote[] {
   return votes;
 }
 
-function parseSongId(docId: string, semifinalId: string): string | null {
-  const prefix = `${semifinalId}_`;
-  return docId.startsWith(prefix) ? docId.slice(prefix.length) : null;
+function mergeVotes(legacy: Vote[], current: Vote[]): Vote[] {
+  const map = new Map<string, Vote>();
+  for (const v of legacy) map.set(v.userId, v);
+  for (const v of current) map.set(v.userId, v);
+  return Array.from(map.values());
+}
+
+function parseVoteId(voteId: string, semifinalPrefix: string): { songId: string; userId: string } | null {
+  if (!voteId.startsWith(semifinalPrefix)) return null;
+  const rest = voteId.slice(semifinalPrefix.length);
+  const uIdx = rest.indexOf('_u_');
+  if (uIdx === -1) return null;
+  return { songId: rest.slice(0, uIdx), userId: rest.slice(uIdx + 1) };
 }
 
 export function subscribeToSemifinalVotes(
@@ -49,19 +64,59 @@ export function subscribeToSemifinalVotes(
   callback: (votes: SemifinalVotes) => void,
 ): () => void {
   const prefix = `${semifinalId}_`;
-  const q = query(
+  let currentVotes: SemifinalVotes = {};
+  let legacyVotes: SemifinalVotes = {};
+
+  function emit() {
+    const merged: SemifinalVotes = {};
+    const songIds = new Set([...Object.keys(currentVotes), ...Object.keys(legacyVotes)]);
+    songIds.forEach((songId) => {
+      merged[songId] = mergeVotes(legacyVotes[songId] ?? [], currentVotes[songId] ?? []);
+    });
+    callback(merged);
+  }
+
+  const currentQ = query(
+    collection(db, 'votes'),
+    where(documentId(), '>=', prefix),
+    where(documentId(), '<', prefix + UPPER_SENTINEL),
+  );
+  const unsubCurrent = onSnapshot(currentQ, (snap) => {
+    const result: SemifinalVotes = {};
+    snap.forEach((d) => {
+      const parsed = parseVoteId(d.id, prefix);
+      if (!parsed) return;
+      const data = d.data() as StoredVote;
+      if (typeof data?.score !== 'number') return;
+      (result[parsed.songId] ??= []).push({
+        userId: parsed.userId,
+        name: data.name || parsed.userId,
+        score: data.score,
+      });
+    });
+    currentVotes = result;
+    emit();
+  });
+
+  const legacyQ = query(
     collection(db, 'ratings'),
     where(documentId(), '>=', prefix),
     where(documentId(), '<', prefix + UPPER_SENTINEL),
   );
-  return onSnapshot(q, (snap) => {
+  const unsubLegacy = onSnapshot(legacyQ, (snap) => {
     const result: SemifinalVotes = {};
     snap.forEach((d) => {
-      const songId = parseSongId(d.id, semifinalId);
-      if (songId) result[songId] = normalize(d.data() as StoredDoc);
+      const songId = d.id.slice(prefix.length);
+      result[songId] = normalizeLegacy(d.data() as LegacyDoc);
     });
-    callback(result);
+    legacyVotes = result;
+    emit();
   });
+
+  return () => {
+    unsubCurrent();
+    unsubLegacy();
+  };
 }
 
 export function subscribeToSongVotes(
@@ -69,10 +124,41 @@ export function subscribeToSongVotes(
   songId: string,
   callback: (votes: Vote[]) => void,
 ): () => void {
-  const ref = doc(db, 'ratings', `${semifinalId}_${songId}`);
-  return onSnapshot(ref, (snap) => {
-    callback(normalize(snap.data() as StoredDoc | undefined));
+  const prefix = `${semifinalId}_${songId}_`;
+  let currentVotes: Vote[] = [];
+  let legacyVotes: Vote[] = [];
+
+  function emit() {
+    callback(mergeVotes(legacyVotes, currentVotes));
+  }
+
+  const currentQ = query(
+    collection(db, 'votes'),
+    where(documentId(), '>=', prefix),
+    where(documentId(), '<', prefix + UPPER_SENTINEL),
+  );
+  const unsubCurrent = onSnapshot(currentQ, (snap) => {
+    const result: Vote[] = [];
+    snap.forEach((d) => {
+      const userId = d.id.slice(prefix.length);
+      const data = d.data() as StoredVote;
+      if (typeof data?.score !== 'number') return;
+      result.push({ userId, name: data.name || userId, score: data.score });
+    });
+    currentVotes = result;
+    emit();
   });
+
+  const legacyRef = doc(db, 'ratings', `${semifinalId}_${songId}`);
+  const unsubLegacy = onSnapshot(legacyRef, (snap) => {
+    legacyVotes = normalizeLegacy(snap.data() as LegacyDoc | undefined);
+    emit();
+  });
+
+  return () => {
+    unsubCurrent();
+    unsubLegacy();
+  };
 }
 
 export async function setRating(
@@ -82,6 +168,6 @@ export async function setRating(
   name: string,
   score: number,
 ): Promise<void> {
-  const ref = doc(db, 'ratings', `${semifinalId}_${songId}`);
-  await setDoc(ref, { [userId]: { score, name } }, { merge: true });
+  const ref = doc(db, 'votes', `${semifinalId}_${songId}_${userId}`);
+  await setDoc(ref, { score, name });
 }
