@@ -6,15 +6,17 @@ interface Props {
   onChange: (score: number) => void;
 }
 
+const SCORES = [12, 10, 8, 7, 6, 5, 4, 3, 2, 1];
+
 export function RatingButtons({ value, onChange }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Mitt betyg</Text>
       <View style={styles.buttons}>
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+        {SCORES.map((n) => (
           <TouchableOpacity
             key={n}
-            style={[styles.btn, value === n && styles.btnActive]}
+            style={[styles.btn, value === n && styles.btnActive, n === 12 && styles.btnTwelve]}
             onPress={() => onChange(n)}
             activeOpacity={0.7}
           >
@@ -57,6 +59,9 @@ const styles = StyleSheet.create({
   btnActive: {
     backgroundColor: '#e040fb',
     borderColor: '#e040fb',
+  },
+  btnTwelve: {
+    borderColor: '#f9c74f',
   },
   btnText: {
     color: '#ccc',
